@@ -67,6 +67,22 @@ class Product extends Model
     }
 
     /**
+     * Get the wishlist items for the product.
+     */
+    public function wishlistItems()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    /**
+     * Get the users who have this product in their wishlist.
+     */
+    public function wishlistedBy()
+    {
+        return $this->belongsToMany(User::class, 'wishlists');
+    }
+
+    /**
      * Get the order items for the product.
      */
     public function orderItems()

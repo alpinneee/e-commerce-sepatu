@@ -7,8 +7,9 @@ use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\CheckoutController;
 use App\Http\Controllers\Customer\HomeController;
-use App\Http\Controllers\Customer\ProductController;
-use App\Http\Controllers\Customer\ProfileController;
+use App\Http\Controllers\Customer\ProductController as CustomerProductController;
+use App\Http\Controllers\Customer\ProfileController as CustomerProfileController;
+use App\Http\Controllers\Customer\WishlistController;
 use App\Http\Controllers\ProfileController as LaravelProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,13 +32,13 @@ Route::post('/contact', [HomeController::class, 'submitContact'])->name('contact
 Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
 
 // Product Routes
-Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
-Route::get('/products/category/{slug}', [ProductController::class, 'category'])->name('products.category');
-Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
+Route::get('/products', [CustomerProductController::class, 'index'])->name('products.index');
+Route::get('/products/search', [CustomerProductController::class, 'search'])->name('products.search');
+Route::get('/products/category/{slug}', [CustomerProductController::class, 'category'])->name('products.category');
+Route::get('/products/{slug}', [CustomerProductController::class, 'show'])->name('products.show');
 
 // Category Routes
-Route::get('/categories', [ProductController::class, 'categories'])->name('categories.index');
+Route::get('/categories', [CustomerProductController::class, 'categories'])->name('categories.index');
 
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
@@ -57,32 +58,42 @@ Route::middleware(['auth'])->group(function () {
 
 // Customer Profile Routes
 Route::middleware(['auth'])->prefix('profile')->name('profile.')->group(function () {
-    Route::get('/', [ProfileController::class, 'index'])->name('index');
-    Route::put('/', [ProfileController::class, 'update'])->name('update');
-    Route::get('/edit', [ProfileController::class, 'index'])->name('edit');
-    Route::get('/change-password', [ProfileController::class, 'showChangePasswordForm'])->name('change-password');
-    Route::put('/change-password', [ProfileController::class, 'changePassword'])->name('update-password');
-    Route::get('/orders', [ProfileController::class, 'orders'])->name('orders');
-    Route::get('/orders/{order}', [ProfileController::class, 'showOrder'])->name('orders.show');
-    Route::get('/addresses', [ProfileController::class, 'addresses'])->name('addresses');
-    Route::post('/addresses', [ProfileController::class, 'storeAddress'])->name('addresses.store');
-    Route::put('/addresses/{address}', [ProfileController::class, 'updateAddress'])->name('addresses.update');
-    Route::delete('/addresses/{address}', [ProfileController::class, 'deleteAddress'])->name('addresses.delete');
+    Route::get('/', [CustomerProfileController::class, 'index'])->name('index');
+    Route::put('/', [CustomerProfileController::class, 'update'])->name('update');
+    Route::get('/edit', [CustomerProfileController::class, 'index'])->name('edit');
+    Route::get('/change-password', [CustomerProfileController::class, 'showChangePasswordForm'])->name('change-password');
+    Route::put('/change-password', [CustomerProfileController::class, 'changePassword'])->name('update-password');
+    Route::get('/orders', [CustomerProfileController::class, 'orders'])->name('orders');
+    Route::get('/orders/{order}', [CustomerProfileController::class, 'showOrder'])->name('orders.show');
+    Route::get('/addresses', [CustomerProfileController::class, 'addresses'])->name('addresses');
+    Route::post('/addresses', [CustomerProfileController::class, 'storeAddress'])->name('addresses.store');
+    Route::put('/addresses/{address}', [CustomerProfileController::class, 'updateAddress'])->name('addresses.update');
+    Route::delete('/addresses/{address}', [CustomerProfileController::class, 'deleteAddress'])->name('addresses.delete');
 });
 
 // Orders Index Route (for compatibility with menu/profile links)
-Route::middleware(['auth', 'customer'])->get('/orders', function () {
+Route::middleware(['auth'])->get('/orders', function () {
     return redirect()->route('profile.orders');
 })->name('orders.index');
 
+// Wishlist Routes
+Route::middleware(['auth'])->prefix('wishlist')->name('wishlist.')->group(function () {
+    Route::get('/', [WishlistController::class, 'index'])->name('index');
+    Route::post('/add', [WishlistController::class, 'add'])->name('add');
+    Route::post('/remove', [WishlistController::class, 'remove'])->name('remove');
+    Route::post('/clear', [WishlistController::class, 'clear'])->name('clear');
+    Route::post('/move-to-cart', [WishlistController::class, 'moveToCart'])->name('move-to-cart');
+    Route::get('/check', [WishlistController::class, 'check'])->name('check');
+});
+
 // Wishlist Index Route (for compatibility with menu/profile links)
-Route::middleware(['auth', 'customer'])->get('/wishlist', function () {
-    return redirect()->route('home'); // Atau arahkan ke halaman wishlist jika sudah ada
+Route::middleware(['auth'])->get('/wishlist', function () {
+    return redirect()->route('wishlist.index');
 })->name('wishlist.index');
 
 // Review Routes
 Route::middleware(['auth'])->group(function () {
-    Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->name('products.review');
+    Route::post('/products/{product}/review', [CustomerProductController::class, 'storeReview'])->name('products.review');
 });
 
 // Dashboard Route (for auth redirect compatibility)
@@ -91,19 +102,34 @@ Route::get('/dashboard', function () {
 })->name('dashboard');
 
 // Admin Routes
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
     
     // Admin Product Routes
-    Route::resource('products', AdminProductController::class);
+    Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
     
     // Admin Category Routes
-    Route::resource('categories', AdminCategoryController::class);
+    Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
     
     // Admin Order Routes
-    Route::resource('orders', AdminOrderController::class)->except(['create', 'store', 'destroy']);
-    Route::get('/orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
-    Route::get('/orders/export', [AdminOrderController::class, 'export'])->name('orders.export');
+    Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->except(['create', 'store', 'destroy']);
+    Route::get('/orders/{order}/invoice', [\App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('orders.invoice');
+    Route::get('/orders/export', [\App\Http\Controllers\Admin\OrderController::class, 'export'])->name('orders.export');
+    
+    // Admin User Routes (placeholder)
+    Route::get('/users', function () {
+        return view('admin.users.index');
+    })->name('users.index');
+    
+    // Admin Reports Routes (placeholder)
+    Route::get('/reports', function () {
+        return view('admin.reports.index');
+    })->name('reports');
+    
+    // Admin Settings Routes (placeholder)
+    Route::get('/settings', function () {
+        return view('admin.settings.index');
+    })->name('settings');
 });
 
 // Laravel Breeze Routes
