@@ -12,6 +12,7 @@ use App\Http\Controllers\Customer\ProfileController as CustomerProfileController
 use App\Http\Controllers\Customer\WishlistController;
 use App\Http\Controllers\ProfileController as LaravelProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -118,12 +119,33 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     
     // Admin User Routes (placeholder)
     Route::get('/users', function () {
-        return view('admin.users.index');
+        $query = \App\Models\User::query();
+        if (request('role')) {
+            $query->whereHas('roles', function($q) {
+                $q->where('name', request('role'));
+            });
+        }
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        $users = $query->orderBy('created_at', 'desc')->paginate(10);
+        return view('admin.users.index', compact('users'));
     })->name('users.index');
     
     // Admin Reports Routes (placeholder)
     Route::get('/reports', function () {
-        return view('admin.reports.index');
+        $totalOrders = \App\Models\Order::count();
+        $totalRevenue = \App\Models\Order::where('payment_status', 'paid')->sum('total_amount');
+        $ordersByStatus = \App\Models\Order::select('status', DB::raw('count(*) as total'))
+            ->groupBy('status')->pluck('total', 'status');
+        $revenueByMonth = \App\Models\Order::where('payment_status', 'paid')
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, SUM(total_amount) as total')
+            ->groupBy('month')->orderBy('month')->pluck('total', 'month');
+        return view('admin.reports.index', compact('totalOrders', 'totalRevenue', 'ordersByStatus', 'revenueByMonth'));
     })->name('reports');
     
     // Admin Settings Routes (placeholder)

@@ -25,7 +25,7 @@ class AdminMiddleware
         $user = Auth::user();
         
         // Simple check for admin role
-        if ($user && $user->roles()->where('name', 'admin')->exists()) {
+        if ($user && $user->role === 'admin') {
             return $next($request);
         }
         

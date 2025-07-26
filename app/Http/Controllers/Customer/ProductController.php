@@ -178,4 +178,14 @@ class ProductController extends Controller
         
         return view('customer.products.search', compact('products', 'query'));
     }
+    
+    /**
+     * Display all categories.
+     */
+    public function categories()
+    {
+        $categories = Category::active()->ordered()->withCount('activeProducts')->get();
+        
+        return view('customer.categories.index', compact('categories'));
+    }
 }

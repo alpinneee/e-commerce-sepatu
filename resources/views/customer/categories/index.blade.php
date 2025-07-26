@@ -28,33 +28,44 @@
 
         <div class="mt-6">
             <h1 class="text-3xl font-bold tracking-tight text-gray-900">Kategori Produk</h1>
-            <p class="mt-2 text-gray-600">Temukan produk berdasarkan kategori yang Anda inginkan</p>
+            <p class="mt-2 text-gray-600">Pilih kategori untuk melihat produk yang tersedia</p>
         </div>
 
         <div class="mt-8">
             @if($categories->isEmpty())
                 <div class="py-10 text-center">
-                    <p class="text-gray-500">Tidak ada kategori produk saat ini.</p>
+                    <p class="text-gray-500">Tidak ada kategori yang tersedia.</p>
                 </div>
             @else
-                <div class="grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div class="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
                     @foreach($categories as $category)
-                        <a href="{{ route('products.category', $category->slug) }}" class="group">
-                            <div class="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg bg-gray-100 sm:aspect-h-3 sm:aspect-w-2">
+                        <div class="group relative">
+                            <div class="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-80">
                                 @if($category->image)
-                                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="h-full w-full object-cover object-center group-hover:opacity-75">
+                                    <img src="{{ $category->image_url }}" 
+                                        alt="{{ $category->name }}" 
+                                        class="h-full w-full object-cover object-center lg:h-full lg:w-full">
                                 @else
-                                    <div class="flex h-full items-center justify-center bg-gray-100 group-hover:bg-gray-200">
-                                        <span class="text-xl font-medium text-gray-600">{{ $category->name }}</span>
+                                    <div class="flex h-full items-center justify-center bg-gray-100">
+                                        <svg class="h-10 w-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                        </svg>
                                     </div>
                                 @endif
                             </div>
-                            <h3 class="mt-4 text-base font-semibold text-gray-900">{{ $category->name }}</h3>
-                            <p class="mt-1 text-sm text-gray-500">{{ $category->products_count ?? 0 }} produk</p>
-                            @if($category->description)
-                                <p class="mt-1 text-sm text-gray-500 line-clamp-2">{{ $category->description }}</p>
-                            @endif
-                        </a>
+                            <div class="mt-4">
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    <a href="{{ route('products.category', $category->slug) }}">
+                                        <span aria-hidden="true" class="absolute inset-0"></span>
+                                        {{ $category->name }}
+                                    </a>
+                                </h3>
+                                @if($category->description)
+                                    <p class="mt-1 text-sm text-gray-500">{{ $category->description }}</p>
+                                @endif
+                                <p class="mt-1 text-sm text-gray-500">{{ $category->active_products_count }} produk</p>
+                            </div>
+                        </div>
                     @endforeach
                 </div>
             @endif

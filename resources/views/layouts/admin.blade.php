@@ -42,6 +42,14 @@
                             Products
                         </span>
                     </a>
+                    <a href="{{ route('admin.categories.index') }}" class="block py-2.5 px-4 rounded transition duration-200 {{ request()->routeIs('admin.categories.*') ? 'bg-blue-600' : 'hover:bg-gray-700' }}">
+                        <span class="flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                            Categories
+                        </span>
+                    </a>
                     
                     <a href="{{ route('admin.orders.index') }}" class="block py-2.5 px-4 rounded transition duration-200 {{ request()->routeIs('admin.orders.*') ? 'bg-blue-600' : 'hover:bg-gray-700' }}">
                         <span class="flex items-center">
