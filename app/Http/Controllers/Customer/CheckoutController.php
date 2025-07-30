@@ -9,14 +9,23 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ShippingAddress;
+use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
+    protected $midtransService;
+
+    public function __construct(MidtransService $midtransService)
+    {
+        $this->midtransService = $midtransService;
+    }
+
     /**
      * Display the checkout page.
      */
@@ -110,8 +119,12 @@ class CheckoutController extends Controller
             'city' => 'required|string|max:100',
             'province' => 'required|string|max:100',
             'postal_code' => 'required|string|max:20',
-            'payment_method' => 'required|in:bank_transfer,cod',
+            'payment_method' => 'required|in:midtrans,cod',
+            'shipping_expedition' => 'required|in:jne_reg,jne_yes,jnt_regular,jnt_express,sicepat_regular,sicepat_halu,pos_regular,pos_express',
+            'shipping_cost' => 'required|numeric|min:0',
+            'cod_fee' => 'nullable|numeric|min:0',
             'save_address' => 'nullable|boolean',
+            'notes' => 'nullable|string|max:500',
         ]);
         
         // Get cart items
@@ -151,7 +164,8 @@ class CheckoutController extends Controller
         // Calculate totals
         $subtotal = 0;
         $discount = 0;
-        $shippingCost = 0; // You can implement shipping cost calculation here
+        $shippingCost = $request->shipping_cost;
+        $codFee = $request->cod_fee ?? 0;
         
         foreach ($cartItems as $item) {
             $price = $item->product->discount_price ?? $item->product->price;
@@ -169,7 +183,10 @@ class CheckoutController extends Controller
             }
         }
         
-        $total = $subtotal - $discount + $shippingCost;
+        $total = $subtotal - $discount + $shippingCost + $codFee;
+        
+        // Get shipping expedition details
+        $expeditionDetails = $this->getExpeditionDetails($request->shipping_expedition);
         
         // Begin transaction
         DB::beginTransaction();
@@ -211,9 +228,13 @@ class CheckoutController extends Controller
                 'total_amount' => $total,
                 'shipping_cost' => $shippingCost,
                 'discount_amount' => $discount,
+                'cod_fee' => $codFee,
                 'payment_method' => $request->payment_method,
                 'payment_status' => 'pending',
                 'shipping_address' => $shippingAddress,
+                'shipping_expedition' => $request->shipping_expedition,
+                'shipping_expedition_name' => $expeditionDetails['name'],
+                'shipping_estimation' => $expeditionDetails['estimation'],
                 'notes' => $request->notes,
             ]);
             
@@ -252,10 +273,22 @@ class CheckoutController extends Controller
             
             DB::commit();
             
-            // Store order in session for thank you page
-            Session::put('completed_order', $order->id);
-            
-            return redirect()->route('checkout.success');
+            // Create Midtrans Snap Token
+            try {
+                $snapToken = $this->midtransService->createSnapToken($order);
+                
+                // Store order in session 
+                Session::put('completed_order', $order->id);
+                
+                // Redirect to payment page with snap token
+                return redirect()->route('checkout.payment', $order->id)
+                    ->with('snap_token', $snapToken);
+                    
+            } catch (\Exception $e) {
+                // If Midtrans fails, redirect to manual payment instructions
+                return redirect()->route('orders.payment-instructions', $order)
+                    ->with('error', 'Payment gateway temporarily unavailable. Please use manual payment methods.');
+            }
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -263,6 +296,77 @@ class CheckoutController extends Controller
         }
     }
     
+    /**
+     * Get expedition details by code.
+     */
+    private function getExpeditionDetails($expeditionCode)
+    {
+        $expeditions = [
+            'jne_reg' => [
+                'name' => 'JNE REG (Regular)',
+                'estimation' => '2-3 hari kerja'
+            ],
+            'jne_yes' => [
+                'name' => 'JNE YES (Yakin Esok Sampai)',
+                'estimation' => '1-2 hari kerja'
+            ],
+            'jnt_regular' => [
+                'name' => 'J&T Regular',
+                'estimation' => '2-4 hari kerja'
+            ],
+            'jnt_express' => [
+                'name' => 'J&T Express',
+                'estimation' => '1-2 hari kerja'
+            ],
+            'sicepat_regular' => [
+                'name' => 'SiCepat REG',
+                'estimation' => '2-3 hari kerja'
+            ],
+            'sicepat_halu' => [
+                'name' => 'SiCepat HALU (Hari Itu Sampai)',
+                'estimation' => '1 hari kerja'
+            ],
+            'pos_regular' => [
+                'name' => 'Pos Reguler',
+                'estimation' => '3-5 hari kerja'
+            ],
+            'pos_express' => [
+                'name' => 'Pos Kilat Khusus',
+                'estimation' => '1-2 hari kerja'
+            ],
+        ];
+        
+        return $expeditions[$expeditionCode] ?? [
+            'name' => 'Unknown Expedition',
+            'estimation' => 'Unknown'
+        ];
+    }
+    
+    /**
+     * Display Midtrans payment page
+     */
+    public function payment(Order $order)
+    {
+        // Check if user can access this order
+        if (Auth::check() && $order->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to order');
+        }
+
+        $snapToken = session('snap_token');
+        
+        if (!$snapToken) {
+            // Try to recreate snap token
+            try {
+                $snapToken = $this->midtransService->createSnapToken($order);
+            } catch (\Exception $e) {
+                return redirect()->route('orders.payment-instructions', $order)
+                    ->with('error', 'Payment gateway unavailable. Please use manual payment methods.');
+            }
+        }
+
+        return view('customer.checkout-payment', compact('order', 'snapToken'));
+    }
+
     /**
      * Display the checkout success page.
      */
@@ -280,5 +384,59 @@ class CheckoutController extends Controller
         Session::forget('completed_order');
         
         return view('customer.checkout-success', compact('order'));
+    }
+
+    /**
+     * Display payment instructions page.
+     */
+    public function paymentInstructions(Order $order)
+    {
+        // Check if user can access this order
+        if (Auth::check() && $order->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to order');
+        }
+        
+        return view('customer.payment-instructions', compact('order'));
+    }
+
+    /**
+     * Upload payment proof.
+     */
+    public function uploadPaymentProof(Request $request, Order $order)
+    {
+        // Check if user can access this order
+        if (Auth::check() && $order->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized access to order');
+        }
+
+        // Validate request
+        $request->validate([
+            'payment_proof' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // 5MB max
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            // Delete old payment proof if exists
+            if ($order->payment_proof && Storage::disk('public')->exists($order->payment_proof)) {
+                Storage::disk('public')->delete($order->payment_proof);
+            }
+
+            // Store new payment proof
+            $path = $request->file('payment_proof')->store('payment-proofs', 'public');
+
+            // Update order
+            $order->update([
+                'payment_proof' => $path,
+                'payment_proof_uploaded_at' => now(),
+                'notes' => $request->notes ? $order->notes . "\n\nBukti Pembayaran: " . $request->notes : $order->notes,
+            ]);
+
+            return redirect()->route('orders.payment-instructions', $order)
+                ->with('success', 'Bukti pembayaran berhasil diupload. Admin akan segera memverifikasi pembayaran Anda.');
+
+        } catch (\Exception $e) {
+            return back()
+                ->with('error', 'Gagal mengupload bukti pembayaran: ' . $e->getMessage());
+        }
     }
 }

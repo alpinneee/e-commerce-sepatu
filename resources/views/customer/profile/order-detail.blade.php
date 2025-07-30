@@ -34,7 +34,7 @@
                                 @elseif($order->status === 'cancelled') bg-red-100 text-red-800
                                 @else bg-gray-100 text-gray-800
                                 @endif">
-                                {{ ucfirst($order->status) }}
+                                {{ $order->status_label }}
                             </span>
                         </div>
                         <div class="text-right">
@@ -78,10 +78,20 @@
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h2 class="text-xl font-semibold text-gray-900 mb-4">Shipping Information</h2>
                     <div class="space-y-2">
-                        <p class="text-gray-900"><strong>{{ $order->shipping_address->name }}</strong></p>
-                        <p class="text-gray-600">{{ $order->shipping_address->address }}</p>
-                        <p class="text-gray-600">{{ $order->shipping_address->city }}, {{ $order->shipping_address->province }} {{ $order->shipping_address->postal_code }}</p>
-                        <p class="text-gray-600">Phone: {{ $order->shipping_address->phone }}</p>
+                        <p class="text-gray-900"><strong>{{ $order->shipping_address_object->name }}</strong></p>
+                        <p class="text-gray-600">{{ $order->shipping_address_object->email }}</p>
+                        <p class="text-gray-600">{{ $order->shipping_address_object->address }}</p>
+                        <p class="text-gray-600">{{ $order->shipping_address_object->city }}, {{ $order->shipping_address_object->province }} {{ $order->shipping_address_object->postal_code }}</p>
+                        <p class="text-gray-600">Phone: {{ $order->shipping_address_object->phone }}</p>
+                        @if($order->shipping_expedition_name)
+                        <div class="mt-4 pt-4 border-t border-gray-200">
+                            <p class="text-sm font-medium text-gray-600">Shipping Method</p>
+                            <p class="text-gray-900">{{ $order->shipping_expedition_name }}</p>
+                            @if($order->shipping_estimation)
+                            <p class="text-sm text-gray-600">Estimated: {{ $order->shipping_estimation }}</p>
+                            @endif
+                        </div>
+                        @endif
                     </div>
                 </div>
                 @endif
@@ -110,10 +120,12 @@
                             <span class="text-gray-900">Rp {{ number_format($order->shipping_cost, 0, ',', '.') }}</span>
                         </div>
                         
+                        @if($order->cod_fee > 0)
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Tax</span>
-                            <span class="text-gray-900">Rp {{ number_format($order->tax_amount, 0, ',', '.') }}</span>
+                            <span class="text-gray-600">COD Fee</span>
+                            <span class="text-gray-900">Rp {{ number_format($order->cod_fee, 0, ',', '.') }}</span>
                         </div>
+                        @endif
                         
                         <div class="border-t border-gray-200 pt-3">
                             <div class="flex justify-between">
@@ -126,7 +138,7 @@
                     <div class="mt-6 space-y-3">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Payment Method</p>
-                            <p class="text-gray-900">{{ ucfirst($order->payment_method) }}</p>
+                            <p class="text-gray-900">{{ $order->payment_method_label }}</p>
                         </div>
                         
                         <div>
@@ -136,11 +148,20 @@
                                 @elseif($order->payment_status === 'pending') bg-yellow-100 text-yellow-800
                                 @else bg-red-100 text-red-800
                                 @endif">
-                                {{ ucfirst($order->payment_status) }}
+                                {{ $order->payment_status_label }}
                             </span>
                         </div>
                     </div>
 
+                    @if($order->payment_method !== 'cod' && $order->payment_status === 'pending')
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <a href="{{ route('orders.payment-instructions', $order) }}" 
+                           class="w-full inline-block text-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            📱 Lihat Cara Pembayaran
+                        </a>
+                    </div>
+                    @endif
+                    
                     @if($order->status === 'delivered')
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <button class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">

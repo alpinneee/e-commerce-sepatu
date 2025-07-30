@@ -17,16 +17,57 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // Get counts
+        // Get basic counts
         $totalOrders = Order::count();
         $totalProducts = Product::count();
         $totalUsers = User::count();
         $totalRevenue = Order::where('payment_status', 'paid')->sum('total_amount');
         
+        // Get order statistics
+        $pendingOrders = Order::where('status', 'pending')->count();
+        $processingOrders = Order::where('status', 'processing')->count();
+        $shippedOrders = Order::where('status', 'shipped')->count();
+        $deliveredOrders = Order::where('status', 'delivered')->count();
+        
+        // Get payment statistics
+        $pendingPayments = Order::where('payment_status', 'pending')->count();
+        $paidPayments = Order::where('payment_status', 'paid')->count();
+        $failedPayments = Order::where('payment_status', 'failed')->count();
+        
+        // Get today's statistics
+        $todayOrders = Order::whereDate('created_at', today())->count();
+        $todayRevenue = Order::where('payment_status', 'paid')
+                            ->whereDate('created_at', today())
+                            ->sum('total_amount');
+        
+        // Get this month's statistics
+        $monthlyOrders = Order::whereMonth('created_at', now()->month)
+                             ->whereYear('created_at', now()->year)
+                             ->count();
+        $monthlyRevenue = Order::where('payment_status', 'paid')
+                               ->whereMonth('created_at', now()->month)
+                               ->whereYear('created_at', now()->year)
+                               ->sum('total_amount');
+        
         // Get recent orders
         $recentOrders = Order::with('user')
             ->latest()
             ->take(5)
+            ->get();
+        
+        // Get orders requiring attention (pending payments with proof uploaded)
+        $ordersNeedingAttention = Order::where('payment_status', 'pending')
+            ->whereNotNull('payment_proof')
+            ->with('user')
+            ->latest()
+            ->take(10)
+            ->get();
+            
+        // Get all pending payments
+        $allPendingPayments = Order::where('payment_status', 'pending')
+            ->with('user')
+            ->latest()
+            ->take(10)
             ->get();
         
         // Get top selling products
@@ -37,7 +78,7 @@ class DashboardController extends Controller
             ->take(5)
             ->get()
             ->map(function ($item) {
-                $product = Product::find($item->product_id);
+                $product = Product::with('images')->find($item->product_id);
                 return [
                     'product' => $product,
                     'total_quantity' => $item->total_quantity
@@ -47,14 +88,34 @@ class DashboardController extends Controller
         // Get sales data for the last 7 days
         $salesData = $this->getSalesData();
         
+        // Get payment method statistics
+        $paymentMethodStats = Order::select('payment_method', DB::raw('count(*) as count'), DB::raw('sum(total_amount) as total'))
+            ->where('payment_status', 'paid')
+            ->groupBy('payment_method')
+            ->get();
+        
         return view('admin.dashboard', compact(
             'totalOrders', 
             'totalProducts', 
             'totalUsers', 
             'totalRevenue',
+            'pendingOrders',
+            'processingOrders', 
+            'shippedOrders',
+            'deliveredOrders',
+            'pendingPayments',
+            'paidPayments',
+            'failedPayments',
+            'todayOrders',
+            'todayRevenue',
+            'monthlyOrders',
+            'monthlyRevenue',
             'recentOrders',
+            'ordersNeedingAttention',
+            'allPendingPayments',
             'topProducts',
-            'salesData'
+            'salesData',
+            'paymentMethodStats'
         ));
     }
     
@@ -70,7 +131,8 @@ class DashboardController extends Controller
             ->whereBetween('created_at', [$startDate, $endDate])
             ->select(
                 DB::raw('DATE(created_at) as date'),
-                DB::raw('SUM(total_amount) as total')
+                DB::raw('SUM(total_amount) as total'),
+                DB::raw('COUNT(*) as count')
             )
             ->groupBy('date')
             ->orderBy('date')
@@ -85,6 +147,7 @@ class DashboardController extends Controller
             $result[$dateString] = [
                 'date' => $dateString,
                 'total' => $salesData->get($dateString) ? $salesData->get($dateString)->total : 0,
+                'count' => $salesData->get($dateString) ? $salesData->get($dateString)->count : 0,
                 'formatted_date' => $date->format('d M')
             ];
         }

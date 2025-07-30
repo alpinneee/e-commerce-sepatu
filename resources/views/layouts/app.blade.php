@@ -27,7 +27,7 @@
             </header>
         @endif
 
-        <!-- Page Content -->
+        <!-- Page Content  -->
         <main>
             @yield('content')
         </main>
