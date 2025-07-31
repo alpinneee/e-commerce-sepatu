@@ -56,7 +56,7 @@
         <div class="flex items-end gap-2 h-40">
             @foreach($revenueByMonth as $month => $total)
                 <div class="flex flex-col items-center justify-end h-full">
-                    <div class="bg-blue-500 w-8 rounded-t h-{{ max(2, $total / max(1, max($revenueByMonth)) * 32) }} flex items-end justify-center text-white text-xs font-bold">
+                    <div class="bg-blue-500 w-8 rounded-t h-{{ max(2, $total / max(1, $revenueByMonth->max()) * 32) }} flex items-end justify-center text-white text-xs font-bold">
                         <span class="block w-full text-center">{{ $total > 0 ? number_format($total/1000).'K' : '0' }}</span>
                     </div>
                     <span class="text-xs mt-1">{{ \Carbon\Carbon::parse($month.'-01')->format('M y') }}</span>

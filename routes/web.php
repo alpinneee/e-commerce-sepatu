@@ -161,6 +161,22 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         return view('admin.reports.index', compact('totalOrders', 'totalRevenue', 'ordersByStatus', 'revenueByMonth'));
     })->name('reports');
     
+    // Admin Analytics Routes
+    Route::get('/analytics/users', [\App\Http\Controllers\Admin\UserAnalyticsController::class, 'index'])->name('analytics.users');
+    
+    // Admin Notifications Routes
+    Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+    
+    // Admin Billing Routes
+    Route::get('/billing', [\App\Http\Controllers\Admin\BillingController::class, 'index'])->name('billing.index');
+    
+    // Admin Security Routes
+    Route::get('/security', [\App\Http\Controllers\Admin\SecurityController::class, 'index'])->name('security.index');
+    Route::put('/security/password', [\App\Http\Controllers\Admin\SecurityController::class, 'updatePassword'])->name('security.password');
+    
+    // Admin Help Routes
+    Route::get('/help', [\App\Http\Controllers\Admin\HelpController::class, 'index'])->name('help.index');
+    
     // Admin Settings Routes (placeholder)
     Route::get('/settings', function () {
         return view('admin.settings.index');

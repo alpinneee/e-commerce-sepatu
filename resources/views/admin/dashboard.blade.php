@@ -3,84 +3,75 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-4">
     <!-- Page Header -->
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p class="text-gray-600">Selamat datang di panel admin Toko Sepatu</p>
+            <h1 class="text-xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-sm text-gray-600">{{ now()->format('d M Y, H:i') }}</p>
         </div>
-        <div class="flex items-center space-x-4">
-            <div class="text-sm text-gray-500">
-                {{ now()->format('d M Y, H:i') }}
-            </div>
-            <a href="{{ route('admin.orders.index') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm">
-                Kelola Pesanan
-            </a>
-        </div>
+        <a href="{{ route('admin.orders.index') }}" class="bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 transition text-sm">
+            Kelola Pesanan
+        </a>
     </div>
 
     <!-- Quick Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Orders -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <div class="flex items-center">
-                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-2 rounded-full bg-blue-100 text-blue-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                     </svg>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Total Pesanan</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ number_format($totalOrders) }}</p>
+                <div class="ml-3">
+                    <p class="text-xs font-medium text-gray-600">Total Pesanan</p>
+                    <p class="text-xl font-bold text-gray-900">{{ number_format($totalOrders) }}</p>
                     <p class="text-xs text-gray-500">Hari ini: {{ $todayOrders }}</p>
                 </div>
             </div>
         </div>
 
-        <!-- Pending Payments -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
             <div class="flex items-center">
-                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-2 rounded-full bg-yellow-100 text-yellow-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Pembayaran Pending</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ number_format($pendingPayments) }}</p>
+                <div class="ml-3">
+                    <p class="text-xs font-medium text-gray-600">Pembayaran Pending</p>
+                    <p class="text-xl font-bold text-gray-900">{{ number_format($pendingPayments) }}</p>
                     <p class="text-xs text-gray-500">Perlu konfirmasi</p>
                 </div>
             </div>
         </div>
 
-        <!-- Total Revenue -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
             <div class="flex items-center">
-                <div class="p-3 rounded-full bg-green-100 text-green-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-2 rounded-full bg-green-100 text-green-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                     </svg>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Total Pendapatan</p>
-                    <p class="text-2xl font-bold text-gray-900">Rp {{ number_format($totalRevenue) }}</p>
+                <div class="ml-3">
+                    <p class="text-xs font-medium text-gray-600">Total Pendapatan</p>
+                    <p class="text-xl font-bold text-gray-900">Rp {{ number_format($totalRevenue) }}</p>
                     <p class="text-xs text-gray-500">Hari ini: Rp {{ number_format($todayRevenue) }}</p>
                 </div>
             </div>
         </div>
 
-        <!-- Total Products -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+        <div class="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
             <div class="flex items-center">
-                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-2 rounded-full bg-purple-100 text-purple-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                     </svg>
                 </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Total Produk</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ number_format($totalProducts) }}</p>
+                <div class="ml-3">
+                    <p class="text-xs font-medium text-gray-600">Total Produk</p>
+                    <p class="text-xl font-bold text-gray-900">{{ number_format($totalProducts) }}</p>
                     <p class="text-xs text-gray-500">{{ number_format($totalUsers) }} pengguna</p>
                 </div>
             </div>
@@ -88,39 +79,39 @@
     </div>
 
     <!-- Order Status Overview -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Status Pesanan</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="text-center p-4 bg-yellow-50 rounded-lg">
-                <div class="text-2xl font-bold text-yellow-600">{{ $pendingOrders }}</div>
-                <div class="text-sm text-gray-600">Pending</div>
+    <div class="bg-white rounded-lg shadow p-4">
+        <h2 class="text-md font-semibold text-gray-900 mb-3">Status Pesanan</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                <div class="text-xl font-bold text-yellow-600">{{ $pendingOrders }}</div>
+                <div class="text-xs text-gray-600">Pending</div>
             </div>
-            <div class="text-center p-4 bg-blue-50 rounded-lg">
-                <div class="text-2xl font-bold text-blue-600">{{ $processingOrders }}</div>
-                <div class="text-sm text-gray-600">Processing</div>
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+                <div class="text-xl font-bold text-blue-600">{{ $processingOrders }}</div>
+                <div class="text-xs text-gray-600">Processing</div>
             </div>
-            <div class="text-center p-4 bg-purple-50 rounded-lg">
-                <div class="text-2xl font-bold text-purple-600">{{ $shippedOrders }}</div>
-                <div class="text-sm text-gray-600">Shipped</div>
+            <div class="text-center p-3 bg-purple-50 rounded-lg">
+                <div class="text-xl font-bold text-purple-600">{{ $shippedOrders }}</div>
+                <div class="text-xs text-gray-600">Shipped</div>
             </div>
-            <div class="text-center p-4 bg-green-50 rounded-lg">
-                <div class="text-2xl font-bold text-green-600">{{ $deliveredOrders }}</div>
-                <div class="text-sm text-gray-600">Delivered</div>
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+                <div class="text-xl font-bold text-green-600">{{ $deliveredOrders }}</div>
+                <div class="text-xs text-gray-600">Delivered</div>
             </div>
         </div>
     </div>
 
     <!-- Orders Needing Attention & Recent Orders -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- Orders Needing Attention -->
-        <div class="bg-white rounded-lg shadow-md">
-            <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-                <h3 class="text-lg font-medium text-gray-900">Bukti Pembayaran Masuk</h3>
-                <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 class="text-md font-medium text-gray-900">Bukti Pembayaran Masuk</h3>
+                <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">
                     {{ $ordersNeedingAttention->count() }}
                 </span>
             </div>
-            <div class="p-6 max-h-96 overflow-y-auto">
+            <div class="p-4 max-h-80 overflow-y-auto">
                 @if($ordersNeedingAttention->count() > 0)
                     <div class="space-y-4">
                         @foreach($ordersNeedingAttention as $order)

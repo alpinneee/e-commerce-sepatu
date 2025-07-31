@@ -18,30 +18,28 @@
             </div>
             <!-- Right Side -->
             <div class="flex items-center space-x-1">
-                <!-- Cart Icon -->
-                <a href="{{ route('cart.index') }}" class="relative hover:text-gray-700 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                    <span class="absolute -top-1 -right-2 bg-gray-900 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">{{ Cart::count() ?? 0 }}</span>
-                </a>
                 <!-- User Dropdown / Auth -->
                 <div>
                     @auth
-                        <x-dropdown align="right" width="40">
-                            <x-slot name="trigger">
-                                <button class="flex items-center space-x-1 px-2 py-1 rounded hover:bg-gray-100 focus:outline-none">
-                                    <span class="text-xs font-medium">{{ \Illuminate\Support\Str::limit(\Illuminate\Support\Facades\Auth::user()->name, 12) }}</span>
-                                    <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-                                </button>
-                            </x-slot>
-                            <x-slot name="content">
-                                <x-dropdown-link :href="route('profile.edit')">{{ __('Profile') }}</x-dropdown-link>
-                                <x-dropdown-link :href="route('orders.index')">{{ __('My Orders') }}</x-dropdown-link>
-                                <x-dropdown-link :href="route('wishlist.index')">{{ __('Wishlist') }}</x-dropdown-link>
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">
+                                <img src="https://ui-avatars.com/api/?name={{ urlencode(\Illuminate\Support\Facades\Auth::user()->name) }}&background=6366f1&color=fff" alt="{{ \Illuminate\Support\Facades\Auth::user()->name }}" class="w-7 h-7 rounded-full">
+                            </button>
+                            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-2 z-50">
+                                <div class="px-4 py-2 border-b border-gray-100">
+                                    <p class="text-sm font-medium text-gray-900">{{ \Illuminate\Support\Facades\Auth::user()->name }}</p>
+                                    <p class="text-xs text-gray-500">{{ \Illuminate\Support\Facades\Auth::user()->email }}</p>
+                                </div>
+                                <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
+                                <a href="{{ route('orders.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Orders</a>
+                                <a href="{{ route('wishlist.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Wishlist</a>
+                                <a href="{{ route('cart.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">cart</a>
+                                <div class="border-t border-gray-100 my-1"></div>
                                 <form method="POST" action="{{ route('logout') }}">@csrf
-                                    <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">{{ __('Log Out') }}</x-dropdown-link>
+                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Log Out</button>
                                 </form>
-                            </x-slot>
-                        </x-dropdown>
+                            </div>
+                        </div>
                     @else
                         <a href="{{ route('login') }}" class="px-2 py-1 text-xs rounded hover:bg-gray-100 transition">Login</a>
                         <a href="{{ route('register') }}" class="px-2 py-1 text-xs rounded bg-gray-900 hover:bg-gray-700 text-white transition">Register</a>
