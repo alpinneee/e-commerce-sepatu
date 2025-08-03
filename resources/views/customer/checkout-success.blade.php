@@ -231,9 +231,9 @@
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row gap-4 mt-8 animate-slide-up animation-delay-4000">
             @if($order->payment_method !== 'cod')
-            <a href="{{ route('orders.payment-instructions', $order) }}" 
+            <a href="{{ route('profile.orders.show', $order) }}" 
                class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-medium text-center hover:bg-green-700 transition duration-200">
-                📱 Lihat Cara Pembayaran
+                📱 Lihat Detail Pesanan
             </a>
             @endif
             

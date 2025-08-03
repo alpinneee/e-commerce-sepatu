@@ -13,6 +13,7 @@ use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -111,6 +112,9 @@ class CheckoutController extends Controller
      */
     public function process(Request $request)
     {
+        Log::info('Checkout process started');
+        Log::info('Request data:', $request->all());
+        
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
@@ -119,7 +123,7 @@ class CheckoutController extends Controller
             'city' => 'required|string|max:100',
             'province' => 'required|string|max:100',
             'postal_code' => 'required|string|max:20',
-            'payment_method' => 'required|in:midtrans,cod',
+            'payment_method' => 'required|in:midtrans',
             'shipping_expedition' => 'required|in:jne_reg,jne_yes,jnt_regular,jnt_express,sicepat_regular,sicepat_halu,pos_regular,pos_express',
             'shipping_cost' => 'required|numeric|min:0',
             'cod_fee' => 'nullable|numeric|min:0',
@@ -127,17 +131,25 @@ class CheckoutController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
         
+        Log::info('Validation passed');
+        
         // Get cart items
+        Log::info('Getting cart items for user: ' . (Auth::check() ? Auth::id() : 'guest'));
+        
         if (Auth::check()) {
             $cartItems = Cart::where('user_id', Auth::id())->with('product')->get();
+            Log::info('Cart items count: ' . $cartItems->count());
             
             if ($cartItems->isEmpty()) {
+                Log::info('Cart is empty, redirecting to cart');
                 return redirect()->route('cart.index')->with('error', 'Your cart is empty');
             }
         } else {
             $sessionCart = Session::get('cart', []);
+            Log::info('Session cart count: ' . count($sessionCart));
             
             if (empty($sessionCart)) {
+                Log::info('Session cart is empty, redirecting to cart');
                 return redirect()->route('cart.index')->with('error', 'Your cart is empty');
             }
             
@@ -261,7 +273,9 @@ class CheckoutController extends Controller
                 $coupon->incrementUsage();
             }
             
-            // Clear cart
+            DB::commit();
+            
+            // Clear cart and coupon only after successful order creation
             if (Auth::check()) {
                 Cart::where('user_id', Auth::id())->delete();
             } else {
@@ -271,27 +285,61 @@ class CheckoutController extends Controller
             // Clear coupon
             Session::forget('coupon_code');
             
-            DB::commit();
-            
             // Create Midtrans Snap Token
             try {
+                Log::info('Creating Midtrans snap token for order: ' . $order->order_number);
+                Log::info('Payment method: ' . $request->payment_method);
+                Log::info('Order total: ' . $order->total_amount);
+                
                 $snapToken = $this->midtransService->createSnapToken($order);
+                Log::info('Snap token created successfully: ' . $snapToken);
                 
                 // Store order in session 
                 Session::put('completed_order', $order->id);
                 
-                // Redirect to payment page with snap token
+                // Return JSON response for AJAX
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'snap_token' => $snapToken,
+                        'order_id' => $order->id,
+                        'message' => 'Order created successfully'
+                    ]);
+                }
+                
+                // Fallback: Redirect to payment page
                 return redirect()->route('checkout.payment', $order->id)
                     ->with('snap_token', $snapToken);
                     
             } catch (\Exception $e) {
-                // If Midtrans fails, redirect to manual payment instructions
-                return redirect()->route('orders.payment-instructions', $order)
-                    ->with('error', 'Payment gateway temporarily unavailable. Please use manual payment methods.');
+                Log::error('Midtrans error during checkout: ' . $e->getMessage());
+                Log::error('Stack trace: ' . $e->getTraceAsString());
+                
+                // If Midtrans fails, rollback the order creation
+                DB::rollBack();
+                
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Payment gateway error: ' . $e->getMessage()
+                    ], 400);
+                }
+                
+                return back()->withInput()->with('error', 'Payment gateway error: ' . $e->getMessage());
             }
         } catch (\Exception $e) {
+            Log::error('Checkout error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             DB::rollBack();
             
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An error occurred while processing your order: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            // Don't clear cart on error, so user can retry
             return back()->withInput()->with('error', 'An error occurred while processing your order: ' . $e->getMessage());
         }
     }
@@ -359,8 +407,9 @@ class CheckoutController extends Controller
             try {
                 $snapToken = $this->midtransService->createSnapToken($order);
             } catch (\Exception $e) {
-                return redirect()->route('orders.payment-instructions', $order)
-                    ->with('error', 'Payment gateway unavailable. Please use manual payment methods.');
+                Log::error('Failed to create snap token for order: ' . $order->order_number . ' - ' . $e->getMessage());
+                return redirect()->route('checkout.index')
+                    ->with('error', 'Payment gateway error: ' . $e->getMessage());
             }
         }
 
@@ -386,57 +435,5 @@ class CheckoutController extends Controller
         return view('customer.checkout-success', compact('order'));
     }
 
-    /**
-     * Display payment instructions page.
-     */
-    public function paymentInstructions(Order $order)
-    {
-        // Check if user can access this order
-        if (Auth::check() && $order->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized access to order');
-        }
-        
-        return view('customer.payment-instructions', compact('order'));
-    }
 
-    /**
-     * Upload payment proof.
-     */
-    public function uploadPaymentProof(Request $request, Order $order)
-    {
-        // Check if user can access this order
-        if (Auth::check() && $order->user_id !== Auth::id()) {
-            abort(403, 'Unauthorized access to order');
-        }
-
-        // Validate request
-        $request->validate([
-            'payment_proof' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // 5MB max
-            'notes' => 'nullable|string|max:500',
-        ]);
-
-        try {
-            // Delete old payment proof if exists
-            if ($order->payment_proof && Storage::disk('public')->exists($order->payment_proof)) {
-                Storage::disk('public')->delete($order->payment_proof);
-            }
-
-            // Store new payment proof
-            $path = $request->file('payment_proof')->store('payment-proofs', 'public');
-
-            // Update order
-            $order->update([
-                'payment_proof' => $path,
-                'payment_proof_uploaded_at' => now(),
-                'notes' => $request->notes ? $order->notes . "\n\nBukti Pembayaran: " . $request->notes : $order->notes,
-            ]);
-
-            return redirect()->route('orders.payment-instructions', $order)
-                ->with('success', 'Bukti pembayaran berhasil diupload. Admin akan segera memverifikasi pembayaran Anda.');
-
-        } catch (\Exception $e) {
-            return back()
-                ->with('error', 'Gagal mengupload bukti pembayaran: ' . $e->getMessage());
-        }
-    }
 }

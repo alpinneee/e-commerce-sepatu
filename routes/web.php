@@ -53,20 +53,16 @@ Route::post('/cart/coupon/remove', [CartController::class, 'removeCoupon'])->nam
 // Checkout Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-Route::post('/checkout', [CheckoutController::class, 'process'])->name('checkout.process');
-Route::get('/checkout/payment/{order}', [CheckoutController::class, 'payment'])->name('checkout.payment');
-Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
+    Route::post('/checkout', [CheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('/checkout/payment/{order}', [CheckoutController::class, 'payment'])->name('checkout.payment');
+    Route::get('/checkout/success', [CheckoutController::class, 'success'])->name('checkout.success');
+});
 
-// Payment Instructions & Proof Upload
-Route::get('/orders/{order}/payment-instructions', [CheckoutController::class, 'paymentInstructions'])->name('orders.payment-instructions');
-Route::post('/orders/{order}/upload-payment-proof', [CheckoutController::class, 'uploadPaymentProof'])->name('orders.upload-payment-proof');
-
-// Midtrans Routes
+// Midtrans Routes (no auth required for webhooks)
 Route::post('/midtrans/notification', [\App\Http\Controllers\MidtransController::class, 'notification'])->name('midtrans.notification');
 Route::get('/midtrans/finish', [\App\Http\Controllers\MidtransController::class, 'finish'])->name('midtrans.finish');
 Route::get('/midtrans/unfinish', [\App\Http\Controllers\MidtransController::class, 'unfinish'])->name('midtrans.unfinish');
 Route::get('/midtrans/error', [\App\Http\Controllers\MidtransController::class, 'error'])->name('midtrans.error');
-});
 
 // Customer Profile Routes
 Route::middleware(['auth'])->prefix('profile')->name('profile.')->group(function () {

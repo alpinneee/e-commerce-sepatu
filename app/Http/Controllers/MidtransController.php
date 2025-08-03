@@ -17,31 +17,33 @@ class MidtransController extends Controller
     }
 
     /**
-     * Handle notification from Midtrans
+     * Handle Midtrans notification webhook
      */
     public function notification(Request $request)
     {
-        Log::info('Midtrans Notification Received', $request->all());
-
+        Log::info('Midtrans notification received', $request->all());
+        
         try {
-            $success = $this->midtransService->handleNotification();
+            $result = $this->midtransService->handleNotification();
             
-            if ($success) {
-                return response()->json(['status' => 'success'], 200);
+            if ($result) {
+                return response()->json(['status' => 'success']);
             } else {
                 return response()->json(['status' => 'error'], 400);
             }
         } catch (\Exception $e) {
-            Log::error('Midtrans Notification Handler Error: ' . $e->getMessage());
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            Log::error('Midtrans notification error: ' . $e->getMessage());
+            return response()->json(['status' => 'error'], 500);
         }
     }
 
     /**
-     * Handle payment finish callback
+     * Handle successful payment redirect
      */
     public function finish(Request $request)
     {
+        Log::info('Midtrans finish callback', $request->all());
+        
         $orderId = $request->get('order_id');
         
         if ($orderId) {
@@ -51,87 +53,45 @@ class MidtransController extends Controller
                 // Store order in session for success page
                 session(['completed_order' => $order->id]);
                 
-                return redirect()->route('checkout.success')->with('success', 'Payment process completed. Please check your order status.');
+                return redirect()->route('checkout.success')
+                    ->with('success', 'Payment completed successfully!');
             }
         }
         
-        return redirect()->route('checkout.success')->with('info', 'Payment process completed.');
+        // If no specific order, try to get from session
+        $completedOrderId = session('completed_order');
+        if ($completedOrderId) {
+            return redirect()->route('checkout.success')
+                ->with('success', 'Payment completed successfully!');
+        }
+        
+        return redirect()->route('home')
+            ->with('info', 'Payment completed');
     }
 
     /**
-     * Handle payment error
-     */
-    public function error(Request $request)
-    {
-        return redirect()->route('checkout.index')
-            ->with('error', 'Payment failed. Please try again.');
-    }
-
-    /**
-     * Handle unfinished payment
+     * Handle unfinished payment redirect
      */
     public function unfinish(Request $request)
     {
-        return redirect()->route('checkout.index')
-            ->with('warning', 'Payment was not completed. Please complete your payment.');
+        $orderId = $request->get('order_id');
+        
+        Log::info('Unfinished payment for order: ' . $orderId);
+        
+        return redirect()->route('profile.orders')
+            ->with('warning', 'Payment was not completed. You can continue the payment from your order history.');
     }
 
     /**
-     * Get payment status for an order
+     * Handle payment error redirect
      */
-    public function paymentStatus(Order $order)
+    public function error(Request $request)
     {
-        try {
-            $status = $this->midtransService->getTransactionStatus($order->order_number);
-            
-            if ($status) {
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $status
-                ]);
-            } else {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Failed to get payment status'
-                ], 400);
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Cancel payment for an order
-     */
-    public function cancelPayment(Order $order)
-    {
-        try {
-            $result = $this->midtransService->cancelTransaction($order->order_number);
-            
-            if ($result) {
-                $order->update([
-                    'payment_status' => 'cancelled',
-                    'status' => 'cancelled'
-                ]);
-                
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Payment cancelled successfully'
-                ]);
-            } else {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Failed to cancel payment'
-                ], 400);
-            }
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ], 500);
-        }
+        $orderId = $request->get('order_id');
+        
+        Log::error('Payment error for order: ' . $orderId);
+        
+        return redirect()->route('profile.orders')
+            ->with('error', 'Payment failed. Please try again or contact support.');
     }
 }

@@ -94,7 +94,7 @@
                                             View Order Details
                                         </a>
                                         @if($order->payment_method !== 'cod' && $order->payment_status === 'pending')
-                                            <a href="{{ route('orders.payment-instructions', $order) }}" class="text-green-600 hover:text-green-800 font-medium">
+                                            <a href="{{ route('profile.orders.show', $order) }}" class="text-green-600 hover:text-green-800 font-medium">
                                                 📱 Cara Pembayaran
                                             </a>
                                         @endif

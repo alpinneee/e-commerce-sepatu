@@ -155,7 +155,7 @@
 
                     @if($order->payment_method !== 'cod' && $order->payment_status === 'pending')
                     <div class="mt-6 pt-6 border-t border-gray-200">
-                        <a href="{{ route('orders.payment-instructions', $order) }}" 
+                        <a href="{{ route('profile.orders.show', $order) }}" 
                            class="w-full inline-block text-center bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                             📱 Lihat Cara Pembayaran
                         </a>

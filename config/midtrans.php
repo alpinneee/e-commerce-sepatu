@@ -11,9 +11,9 @@ return [
     'is_3ds' => true,
     
     'notification_url' => env('APP_URL') . '/midtrans/notification',
-    'finish_url' => env('APP_URL') . '/checkout/success',
-    'unfinish_url' => env('APP_URL') . '/checkout',
-    'error_url' => env('APP_URL') . '/checkout',
+    'finish_url' => env('APP_URL') . '/midtrans/finish',
+    'unfinish_url' => env('APP_URL') . '/midtrans/unfinish',
+    'error_url' => env('APP_URL') . '/midtrans/error',
     
     'enable_payments' => [
         'credit_card',
