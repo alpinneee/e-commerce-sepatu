@@ -31,10 +31,13 @@ class CartController extends Controller
                 $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
                 
                 $cartItems = $cartItems->map(function ($item) use ($products) {
+                    // $item di sini array, jadi akses pakai ['key']
                     $item['product'] = $products[$item['product_id']] ?? null;
-                    return $item;
+                    // Setelah semua properti di-set, baru cast ke object
+                    return (object) $item;
                 })->filter(function ($item) {
-                    return $item['product'] !== null;
+                    // $item sudah object di sini
+                    return $item->product !== null;
                 });
             }
         }

@@ -29,7 +29,7 @@
                                     @elseif($order->status === 'cancelled') bg-red-100 text-red-800
                                     @else bg-gray-100 text-gray-800
                                     @endif">
-                                    {{ ucfirst($order->status) }}
+                                    {{ $order->status_label }}
                                 </span>
                             </div>
                         </div>
@@ -42,7 +42,7 @@
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-600">Payment Method</p>
-                                    <p class="text-gray-900">{{ ucfirst($order->payment_method) }}</p>
+                                    <p class="text-gray-900">{{ $order->payment_method_label }}</p>
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-600">Payment Status</p>
@@ -51,7 +51,7 @@
                                         @elseif($order->payment_status === 'pending') bg-yellow-100 text-yellow-800
                                         @else bg-red-100 text-red-800
                                         @endif">
-                                        {{ ucfirst($order->payment_status) }}
+                                        {{ $order->payment_status_label }}
                                     </span>
                                 </div>
                                 <div>
@@ -89,9 +89,16 @@
 
                             <div class="border-t border-gray-200 pt-4 mt-4">
                                 <div class="flex justify-between items-center">
-                                    <a href="{{ route('profile.orders.show', $order) }}" class="text-blue-600 hover:text-blue-800 font-medium">
-                                        View Order Details
-                                    </a>
+                                    <div class="flex space-x-4">
+                                        <a href="{{ route('profile.orders.show', $order) }}" class="text-blue-600 hover:text-blue-800 font-medium">
+                                            View Order Details
+                                        </a>
+                                        @if($order->payment_method !== 'cod' && $order->payment_status === 'pending')
+                                            <a href="{{ route('profile.orders.show', $order) }}" class="text-green-600 hover:text-green-800 font-medium">
+                                                📱 Cara Pembayaran
+                                            </a>
+                                        @endif
+                                    </div>
                                     @if($order->status === 'delivered')
                                         <button class="text-green-600 hover:text-green-800 font-medium">
                                             Leave Review

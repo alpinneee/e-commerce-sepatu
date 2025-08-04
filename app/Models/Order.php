@@ -22,10 +22,17 @@ class Order extends Model
         'total_amount',
         'shipping_cost',
         'discount_amount',
+        'cod_fee',
         'payment_method',
         'payment_status',
         'payment_details',
+        'payment_proof',
+        'payment_instructions',
+        'payment_proof_uploaded_at',
         'shipping_address',
+        'shipping_expedition',
+        'shipping_expedition_name',
+        'shipping_estimation',
         'notes',
     ];
 
@@ -38,8 +45,10 @@ class Order extends Model
         'total_amount' => 'decimal:0',
         'shipping_cost' => 'decimal:0',
         'discount_amount' => 'decimal:0',
+        'cod_fee' => 'decimal:0',
         'payment_details' => 'json',
         'shipping_address' => 'json',
+        'payment_proof_uploaded_at' => 'datetime',
     ];
 
     /**
@@ -59,11 +68,11 @@ class Order extends Model
     }
 
     /**
-     * Get the subtotal amount (total without shipping and discount).
+     * Get the subtotal amount (total without shipping, discount, and COD fee).
      */
     public function getSubtotalAttribute()
     {
-        return $this->total_amount + $this->discount_amount - $this->shipping_cost;
+        return $this->total_amount + $this->discount_amount - $this->shipping_cost - $this->cod_fee;
     }
 
     /**
@@ -111,5 +120,26 @@ class Order extends Model
         ];
 
         return $labels[$this->payment_status] ?? $this->payment_status;
+    }
+
+    /**
+     * Get the payment method label.
+     */
+    public function getPaymentMethodLabelAttribute()
+    {
+        $labels = [
+            'qris' => 'QRIS',
+            'gopay' => 'GoPay',
+            'ovo' => 'OVO',
+            'dana' => 'DANA',
+            'shopeepay' => 'ShopeePay',
+            'bca' => 'Bank BCA',
+            'mandiri' => 'Bank Mandiri',
+            'bri' => 'Bank BRI',
+            'bni' => 'Bank BNI',
+            'cod' => 'Cash on Delivery (COD)',
+        ];
+
+        return $labels[$this->payment_method] ?? $this->payment_method;
     }
 }
